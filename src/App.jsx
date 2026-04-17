@@ -44,7 +44,6 @@ export default function App() {
   const totalFp = Number(gbData.maxFp) || 0;
   const remainingFp = Math.max(0, totalFp - currentFp);
   const arcMultiplier = 1 + (Number(arcBonus) / 100);
-  let firstAvailableFound = false;
 
   return (
     <div style={{ padding: '20px', fontFamily: 'sans-serif', color: '#333' }}>
@@ -70,7 +69,7 @@ export default function App() {
             setArcBonus(val);
             chrome.storage.local.set({ userArcBonus: val });
           }} 
-          style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '16px', boxSizing: 'box-sizing' }} 
+          style={{ width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box' }} 
         />
       </div>
 
@@ -92,45 +91,50 @@ export default function App() {
               const secureCost = Math.ceil((remainingFp + otherFp) / 2);
               const profit = reward - secureCost;
               
-              const isTaken = totalFp > 0 && (remainingFp === 0 || (otherFp >= secureCost && secureCost > 0));
-              const isMe = (rank.player_id && rank.player_id === gbData.myPlayerId) || 
-                           rank.is_player === true || 
-                           (rank.player && rank.player.is_self === true);
-            
-              let displaySecure = "-";
-              if (!isMe && !isTaken && !firstAvailableFound && totalFp > 0) {
-                displaySecure = secureCost;
-                firstAvailableFound = true;
-              }
-            
-              const textOpacity = isTaken ? 0.5 : 1;
+              // 1. Tjek om det er dit ID (uanset beløb)
+              const isActuallyMe = (rank.player_id && rank.player_id === gbData.myPlayerId) || 
+                                   (rank.player && rank.player.is_self === true);
+
+              // 2. Er pladsen 100% sikret (af hvem som helst)?
+              const is100PercentSecure = totalFp > 0 && (remainingFp === 0 || (otherFp >= secureCost && secureCost > 0));
+
+              // 3. Strenge logik for "DIG": Kun hvis det er dig OG den er 100% låst
+              const isMeAndSecured = isActuallyMe && is100PercentSecure;
+
+              // 4. "Pay Now" logik: Hvor meget skal du indtaste lige nu?
+              // Vi trækker dine egne point fra sikringskravet
+              const payNow = isActuallyMe ? Math.max(0, secureCost - otherFp) : secureCost;
+
+              const textOpacity = is100PercentSecure ? 0.5 : 1;
             
               return (
                 <tr key={i} style={{ 
                   borderBottom: '1px solid #f1f1f1', 
-                  backgroundColor: isMe ? 'rgba(39, 174, 96, 0.25)' : 'transparent' 
+                  backgroundColor: isMeAndSecured ? 'rgba(39, 174, 96, 0.25)' : 'transparent' 
                 }}>
                   <td style={{ padding: '18px 10px', fontWeight: 'bold', opacity: textOpacity }}>
-                    #{rank.rank || i+1} {isMe && <span style={{fontSize: '10px', color: '#1e8449', display: 'block'}}>DIG</span>}
+                    #{rank.rank || i+1} 
+                    {isMeAndSecured && <span style={{fontSize: '10px', color: '#1e8449', display: 'block'}}>DIG</span>}
                   </td>
+                  
                   <td style={{ padding: '18px 10px', opacity: textOpacity }}>{reward}</td>
+                  
                   <td style={{ padding: '18px 10px', color: '#2980b9', fontWeight: '1000', opacity: textOpacity }}>
-                    {isMe ? "✅" : (isTaken ? "-" : secureCost)}
+                    {isMeAndSecured ? "✅" : (is100PercentSecure ? "-" : payNow)}
                   </td>
+                  
                   <td style={{ 
                     padding: '18px 10px', 
                     textAlign: 'right', 
                     fontWeight: 'bold', 
                     opacity: textOpacity,
-                    // Vi beholder den grønne/røde farve for DIG, selvom pladsen er "taken"
-                    color: (isTaken && !isMe) ? '#999' : (profit > 0 ? '#27ae60' : '#e74c3c') 
+                    color: (is100PercentSecure && !isMeAndSecured) ? '#999' : (profit > 0 ? '#27ae60' : '#e74c3c') 
                   }}>
-                    {/* HER ER DEN NYE LOGIK: Vis profit for DIG, ellers vis Optaget/Profit */}
-                    {isMe ? (profit > 0 ? `+${profit}` : profit) : (isTaken ? 'Optaget' : (profit > 0 ? `+${profit}` : profit))}
+                    {isMeAndSecured ? (profit > 0 ? `+${profit}` : profit) : (is100PercentSecure ? 'Optaget' : (profit > 0 ? `+${profit}` : profit))}
                   </td>
                 </tr>
               );
-          })}
+            })}
         </tbody>
       </table>
     </div>
