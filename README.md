@@ -1,16 +1,21 @@
-# React + Vite
+# Installationsguide 
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+1. Tryk på den grønne knap "code" her på github (ca. toppen af siden).
+2. Tryk på Download Zip (bunden af menuen der åbnes).
+3. Pak zip filen ud, det sted du gerne vil have programmet til at ligge på din computer. 
 
-Currently, two official plugins are available:
+4. Åbn en chrome browser.
+5. Tryk på det puslespilsbrik-lignende ikon, til højre for søgebaren.
+5. Gå ind på Manage extensions. (eller brug link: chrome://extensions/ )
+6. Tryk på "Load Unpacked" oppe til venstre.
+7. Diriger hen til projektets mappe du tidligere unzippede.
+8. Gå ind i mappen og vælg "dist" folderen, men gå ikke ind i den - tryk en enkelt gang på dist og tryk derefter vælg
+9. Extensionen er nu tilføjet.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+10. Tryk igen oppe på puslespilsbrikken, find "Olis Riffel" og tryk på knappenålen
+11. Dette skaber en knap, ved siden af puslespilsbrikken, med et sigtekorns ikon - denne kan nu bruges til at åbne/lukke sidepanelet
 
-## React Compiler
+### NOTE:
+- Hvis du havde spillet åbent imens du gjorde alt dette, så skal du genindlæse spillet.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Hvis du har panelet åbent og åbner en bygning der endnu ikke har nogen fp i sig, så vil den ikke kunne indlæse bygningen.
