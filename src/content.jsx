@@ -1,75 +1,71 @@
+// content.jsx
 window.addEventListener('FOE_INJECT_DATA', (event) => {
-    const packet = event.detail;
-    if (!Array.isArray(packet)) return;
+  const packet = event.detail;
+  if (!Array.isArray(packet)) return;
 
-    chrome.storage.local.get(['currentGBData'], (result) => {
-        let db = result.currentGBData || { name: "", maxFp: 0, currentFp: 0, rankings: [] };
-        let hasChanges = false;
+  chrome.storage.local.get(['currentGBData'], (result) => {
+    let db = result.currentGBData || { name: "", maxFp: 0, currentFp: 0, rankings: [], ownerName: "", myPlayerId: null };
+    let hasChanges = false;
 
-        packet.forEach(item => {
-            const method = item.requestMethod;
-            const res = item.responseData;
-            if (!res) return;
+    for (const item of packet) {
+      const method = item.requestMethod;
+      const res = item.responseData;
 
-            // 1. ÅBN VINDUE
-            if (method === "getConstruction") {
-                const rankings = res.rankings || [];
-                
-                // Find dit ID ved at lede efter is_self i listen
-                const me = rankings.find(r => r.player && r.player.is_self);
-                const myId = me ? me.player.player_id : db.myPlayerId;
+      if (!res) continue;
 
-                db = {
-                    name: "Henter navn...",
-                    maxFp: 0,
-                    currentFp: rankings.reduce((sum, r) => sum + (r.forge_points || 0), 0),
-                    rankings: rankings,
-                    myPlayerId: myId,
-                    updatedAt: Date.now()
-                };
-                hasChanges = true;
-            }
+      // 1. Fang Total FP (Ligger inde i state i CityMapEntity)
+      if (method === "getOtherPlayerCityMapEntity") {
+        db.maxFp = res.state?.forge_points_for_level_up || db.maxFp;
+        db.entityId = res.id || db.entityId;
+        hasChanges = true;
+      }
 
-            // 2. INDBETALING (Rettet til Array-struktur)
-            if (method === "contributeForgePoints") {
-                // Din log viser at res ER selve listen (Array), ikke et objekt med .rankings
-                if (Array.isArray(res)) {
-                    const rankings = res;
-                    const me = rankings.find(r => r.player && r.player.is_self);
-                    
-                    db.rankings = rankings;
-                    db.currentFp = rankings.reduce((sum, r) => sum + (r.forge_points || 0), 0);
-                    if (me) db.myPlayerId = me.player.player_id;
-                    
-                    db.updatedAt = Date.now();
-                    hasChanges = true;
-                }
-            }
-
-            // 3. STAMDATA
-            if (method === "getOtherPlayerOverview" && Array.isArray(res)) {
-                const match = res.find(b => 
-                    (b.current_progress === db.currentFp && b.max_progress > 0) ||
-                    (db.name !== "" && b.name === db.name)
-                );
-                
-                if (match) {
-                    db.name = match.name;
-                    db.maxFp = match.max_progress;
-                    db.currentFp = match.current_progress; 
-                    db.updatedAt = Date.now();
-                    hasChanges = true;
-                }
-            }
-        });
-
-        if (hasChanges) {
-            chrome.storage.local.set({ currentGBData: db });
+      // 2. Fang Navne
+      if (method === "getOtherPlayerOverview" && Array.isArray(res)) {
+        const match = res.find(b => b.entity_id === db.entityId) || res.find(b => b.name === db.name);
+        if (match) {
+          db.name = match.name || db.name;
+          db.ownerName = (match.player && match.player.name) || db.ownerName;
+          db.maxFp = match.max_progress || db.maxFp;
+          hasChanges = true;
         }
-    });
+      }
+
+      // 3. Fang Rankings, beregn lagt, og find dit Player ID
+      if (method === "getConstruction") {
+        db.rankings = res.rankings || [];
+        db.currentFp = db.rankings.reduce((sum, r) => sum + (r.forge_points || 0), 0);
+        
+        const me = db.rankings.find(r => r.player && r.player.is_self);
+        if (me) db.myPlayerId = me.player.player_id;
+
+        db.updatedAt = Date.now();
+        hasChanges = true;
+      }
+
+      // 4. Fang Indbetalinger (Når du lægger FP, opdateres listen automatisk)
+      if (method === "contributeForgePoints" && Array.isArray(res)) {
+        db.rankings = res;
+        db.currentFp = db.rankings.reduce((sum, r) => sum + (r.forge_points || 0), 0);
+        
+        const me = db.rankings.find(r => r.player && r.player.is_self);
+        if (me) db.myPlayerId = me.player.player_id;
+
+        db.updatedAt = Date.now();
+        hasChanges = true;
+      }
+    }
+
+    if (hasChanges) {
+      chrome.storage.local.set({ currentGBData: db }, () => {
+        chrome.runtime.sendMessage({ type: 'UPDATE_DATA', data: db }).catch(() => {});
+      });
+    }
+  });
 });
 
-const script = document.createElement('script');
-script.src = chrome.runtime.getURL('src/inject.js');
-script.onload = function() { this.remove(); };
-(document.head || document.documentElement).appendChild(script);
+if (!document.querySelector('script[src*="inject.js"]')) {
+  const script = document.createElement('script');
+  script.src = chrome.runtime.getURL('src/inject.js');
+  (document.head || document.documentElement).appendChild(script);
+}
