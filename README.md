@@ -19,3 +19,6 @@
 - Hvis du havde spillet åbent imens du gjorde alt dette, så skal du genindlæse spillet.
 
 - Hvis du har panelet åbent og åbner en bygning der endnu ikke har nogen fp i sig, så vil den ikke kunne indlæse bygningen.
+
+- Extensionen vil ikke virke, hvis den bliver gemt på OneDrive eller andre cloud løsninger. 
+  Den skal gemmes på din lokale pc, overførelser eller lignende.
